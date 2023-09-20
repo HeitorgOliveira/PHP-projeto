@@ -1,18 +1,26 @@
-<?php    
-include("bd.php");
+<?php
+include_once 'bd.php';
+
+$mensagem = "";
+
 if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['editar'])) {
     $roedor_id = $_POST['editar'];
-    $novoNome = $_POST['novoNome'];
 
-    if (atualizarRoedor($roedor_id, $novoNome)) {
-        $mensagem = "Nome do roedor atualizado com sucesso!";
+    if (isset($_POST['novoNome']) && !empty($_POST['novoNome'])) {
+        $novoNome = $_POST['novoNome'];
+
+        if (atualizarRoedor($roedor_id, $novoNome)) {
+            $mensagem = "Nome do roedor atualizado com sucesso!";
+        } else {
+            $mensagem = "Falha ao atualizar o nome do roedor.";
+        }
     } else {
-        $mensagem = "Falha ao atualizar o nome do roedor.";
+        echo "O nome não pode ser vazio";
     }
 }
-
 $roedores = listarRoedores();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="pt-br">
