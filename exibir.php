@@ -5,11 +5,24 @@ function conectaBD() {
     return $pdo;
 }
 
-function listarRoedores() {
+function listarRoedores($filtro = "") {
     try {
         $pdo = conectaBD();
 
-        $stmt = $pdo->query("SELECT nome, imagem FROM Roedores");
+        // Consultar roedores com base no filtro de nome
+        $sql = "SELECT nome, imagem FROM Roedores";
+        if (!empty($filtro)) {
+            $sql .= " WHERE nome LIKE :filtro";
+        }
+
+        $stmt = $pdo->prepare($sql);
+
+        if (!empty($filtro)) {
+            $filtro = '%' . $filtro . '%';
+            $stmt->bindParam(':filtro', $filtro);
+        }
+
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         return false;
@@ -17,6 +30,11 @@ function listarRoedores() {
 }
 
 $roedores = listarRoedores();
+
+if ($_SERVER["REQUEST_METHOD"] === 'POST') {
+    $filtro = $_POST["filtro"];
+    $roedores = listarRoedores($filtro);
+}
 ?>
 
 <!DOCTYPE html>
@@ -25,27 +43,49 @@ $roedores = listarRoedores();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exibição de Roedores</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        /* Estilos CSS semelhantes aos usados anteriormente */
     </style>
 </head>
 <body>
+    <a href="index.html">Início</a>
     <h1>Exibição de Roedores</h1>
     <div class="container">
-        <?php if ($roedores) : ?>
-            <div class="roedores">
+        <form method="POST" id="formBusca">
+            <label for="filtro">Buscar Roedor por Nome:</label>
+            <input type="text" name="filtro" id="filtro">
+        </form>
+
+        <div class="roedores">
+            <?php if ($roedores) : ?>
                 <?php foreach ($roedores as $roedor) : ?>
                     <div class="roedor">
-                        <img src="uploads/<?php echo $roedor['imagem']; ?>" alt="<?php echo $roedor['nome']; ?>" width="100">
+                        <img src="data:image;base64,<?= base64_encode($roedor['imagem']); ?>" alt="<?= $roedor['nome']; ?>" width="100">
                         <p><?php echo $roedor['nome']; ?></p>
                     </div>
                 <?php endforeach; ?>
-            </div>
-        <?php else : ?>
-            <p>Nenhum roedor cadastrado.</p>
-        <?php endif; ?>
-
-        <br>
-        <a href="index.php">Voltar para a Página Inicial</a>
+            <?php else : ?>
+                <p>Nenhum roedor encontrado.</p>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#filtro").on("input", function() {
+                var filtro = $(this).val();
+
+                $.ajax({
+                    type: "POST",
+                    url: "exibicao.php",
+                    data: { filtro: filtro },
+                    success: function(response) {
+                        $(".roedores").html(response);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
